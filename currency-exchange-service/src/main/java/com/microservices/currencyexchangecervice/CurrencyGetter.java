@@ -3,6 +3,7 @@ package com.microservices.currencyexchangecervice;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.microservices.currencyexchangecervice.business.CurrencyValue;
+import com.microservices.currencyexchangecervice.business.CurrencyValueService;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,6 +25,12 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 @Component
 @EnableAsync
 public class CurrencyGetter {
+    private final CurrencyValueService service;
+
+    public CurrencyGetter(CurrencyValueService repository) {
+        this.service = repository;
+    }
+
     @PostConstruct
     public void onStartup() throws IOException, InterruptedException {
         getValues();
@@ -45,6 +52,7 @@ public class CurrencyGetter {
         XmlMapper mapper = new XmlMapper();
         List<CurrencyValue> values = mapper.readValue(response.body(), new TypeReference<ArrayList<CurrencyValue>>() {
         });
-        values.forEach(t -> System.out.println(t.toString()));
+        values.forEach(t -> service.save(t));
+        service.save(new CurrencyValue(-1, 643, "RUB", 1, "Russian Ruble", "1,0"));
     }
 }

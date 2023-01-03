@@ -21,20 +21,27 @@ import javax.persistence.Id;
 public class CurrencyValue {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private long id;
 
     @JacksonXmlElementWrapper(localName = "NumCode")
-    int numCode;
+    private int numCode;
 
     @JacksonXmlElementWrapper(localName = "CharCode")
-    String charCode;
+    private String charCode;
 
     @JacksonXmlElementWrapper(localName = "Nominal")
-    int nominal;
+    private int nominal;
 
     @JacksonXmlElementWrapper(localName = "Name")
-    String currencyName;
+    private String currencyName;
 
     @JacksonXmlElementWrapper(localName = "Value")
-    String value;
+    private String power;
+
+    public CurrencyValue(int numCode, String charCode, int nominal, String power) {
+        this.numCode = numCode;
+        this.charCode = charCode;
+        this.nominal = nominal;
+        this.power = power;
+    }
 }
