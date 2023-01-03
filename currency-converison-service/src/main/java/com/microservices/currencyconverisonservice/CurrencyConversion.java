@@ -19,18 +19,9 @@ public class CurrencyConversion {
 
     private String to;
 
-    private BigDecimal conversionMultiple;
+    private double conversionMultiple;
 
     private BigDecimal quantity;
 
     private BigDecimal totalCalculatedAmount;
-
-    private String environment;
-
-    public CurrencyConversion(long id, String from, String to, BigDecimal quantity) {
-        this.id = id;
-        this.from = from;
-        this.to = to;
-        this.quantity = quantity;
-    }
 }
