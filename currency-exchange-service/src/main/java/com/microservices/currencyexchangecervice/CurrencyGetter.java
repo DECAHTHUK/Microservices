@@ -46,7 +46,6 @@ public class CurrencyGetter {
     @Async
     public void onScheduleNational() throws IOException, InterruptedException {
         getCurrencyValues();
-        getCryptoValues();
     }
 
     @Scheduled(initialDelay = 3600000, fixedDelay = 3600000)
