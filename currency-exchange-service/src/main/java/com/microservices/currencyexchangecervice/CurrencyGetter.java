@@ -44,8 +44,13 @@ public class CurrencyGetter {
 
     @Scheduled(cron = "0 0 2 * * ?")
     @Async
-    public void onSchedule() throws IOException, InterruptedException {
+    public void onScheduleNational() throws IOException, InterruptedException {
         getCurrencyValues();
+        getCryptoValues();
+    }
+
+    @Scheduled(initialDelay = 3600000, fixedDelay = 3600000)
+    public void onScheduleCrypto() throws IOException, InterruptedException {
         getCryptoValues();
     }
 
