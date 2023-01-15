@@ -1,7 +1,10 @@
 package com.microservices.currencyexchangecervice.business;
 
+import com.microservices.currencyexchangecervice.CircuitBreakerController;
 import com.microservices.currencyexchangecervice.persistence.CurrencyValueRepository;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,7 @@ import java.util.Locale;
 
 @Service
 public class CurrencyValueService {
+    private final Logger logger = LoggerFactory.getLogger(CircuitBreakerController.class);
     @Autowired
     CurrencyValueRepository repository;
 
@@ -30,6 +34,7 @@ public class CurrencyValueService {
             value = repository.findByCharCode(code);
         }
         if (value == null) {
+            logger.info("Valute with the code " + code + " was not found");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Valute with the code " + code + " was not found");
         }
         return value;
@@ -47,6 +52,7 @@ public class CurrencyValueService {
             coef1 = (nf.parse(val1.getPower())).doubleValue() / val1.getNominal();
             coef2 = (nf.parse(val2.getPower())).doubleValue() / val2.getNominal();
         } catch (ParseException e) {
+            logger.error("Error while parsing coefficient: " + e.getStackTrace());
             throw new RuntimeException(e);
         }
 
@@ -55,6 +61,17 @@ public class CurrencyValueService {
     }
 
     public void save(CurrencyValue value) {
+        repository.save(value);
+    }
+
+    public void saveCrypto(CurrencyValue value, double coefficient) {
+
+        String newPower = String.valueOf((double)Math.round
+                ((Double.parseDouble(value.getPower()) * coefficient) * 10000) / 10000);
+
+        newPower = newPower.replaceAll("\\.", ",");
+
+        value.setPower(newPower);
         repository.save(value);
     }
 
