@@ -7,7 +7,7 @@ Current features:
 3. Converting any value into another with specified char encoding or numeric codes(ISO 4217) for national currencies.
 
 TODO:
-1. Security
+1. Security(learning OAuth 2.0)
 2. Feign and resilience4j coverage
 3. Wallets (separated from conversion feature)
 4. Special tariffs
