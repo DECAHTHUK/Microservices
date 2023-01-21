@@ -12,6 +12,7 @@ TODO:
 3. Wallets (separated from conversion feature)
 4. Special tariffs
 5. Documentation
+6. Kubernetes orchestration, integrating with Yandex Cloud
 
 
 ![image](https://user-images.githubusercontent.com/89610640/210271793-dc81f3ba-9e11-48d8-999f-85f1515c0bc3.png)
