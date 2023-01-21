@@ -12,16 +12,16 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
         http
                     .authorizeExchange()
-                    .pathMatchers("/actuator/**", "/")
+                    .pathMatchers("/actuator/**", "/", "/currency-exchange/**",
+                            "/currency-converter/**", "/banking/open")
                     .permitAll()
                 .and()
                     .authorizeExchange()
                     .anyExchange()
                     .authenticated()
                 .and()
-                    .oauth2Login() // to redirect to oauth2 login page.
+                    .oauth2Login()
         ;
-
         return http.build();
     }
 }
