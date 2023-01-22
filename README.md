@@ -3,14 +3,23 @@ A pet project with a usage of all the skills I have(like a glock 19 but with sup
 
 Stack:
 Spring Boot 2.7
+
 Spring Cloud
+
 OAuth 2.0 with Keycloak
+
 PostgreSQL
+
 Hibernate
+
 Docker
+
 Feign(enhancing in the future)
+
 Resilience4j(enhancing in the future)
+
 Zipkin, Sleuth, RabbitMQ(in the future)
+
 Kubernetes(in the future)
 
 
