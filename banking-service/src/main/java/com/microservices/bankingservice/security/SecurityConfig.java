@@ -18,15 +18,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(new RoleConverter());
+
         http
                 .authorizeRequests()
-                    .antMatchers("/banking/open/**", "/actuator/**").permitAll()
+                    .antMatchers("/banking/open/**", "/actuator/**",
+                            "/error").permitAll()
                     .anyRequest().authenticated()
                 .and()
                     .oauth2ResourceServer()
                         .jwt()
                             .jwtAuthenticationConverter(converter);
-        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+        http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED);
         return http.build();
     }
 }
