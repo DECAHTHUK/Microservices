@@ -8,6 +8,23 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties("limits-service")
 @Data
 public class Configuration {
-    private int minimum;
-    private int maximum;
+    private int minimumTrans;
+
+    private int maximumTrans;
+
+    private int premiumMaximumTrans;
+
+    private int dailyTransLimit;
+
+    private int dollarConvDailyMaximum;
+
+    private int premiumDollarConvDailyMaximum;
+
+    private int euroConvDailyMaximum;
+
+    private int premiumEuroConvDailyMaximum;
+
+    private int dollarInAccountMaximum;
+
+    private int euroInAccountMaximum;
 }

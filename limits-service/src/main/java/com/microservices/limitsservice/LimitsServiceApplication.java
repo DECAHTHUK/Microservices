@@ -4,7 +4,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 //TODO limits for special tariffs e.t.c
-//TODO authentication, authorization
 
 @SpringBootApplication
 public class LimitsServiceApplication {
