@@ -16,9 +16,10 @@ public class UserService {
         return repository.findUserByUsername(username);
     }
 
+    public User findById(long id) { return repository.findUserById(id);}
+
     public long createNewUser(String username) {
-        User user = new User(0, username, null, 0,
-                null, null, null);
+        User user = new User(0, username, 0, 0, 0);
         return save(user);
     }
 
