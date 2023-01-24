@@ -5,8 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
-
 @Getter
 @Setter
 @AllArgsConstructor
@@ -21,7 +19,7 @@ public class CurrencyConversion {
 
     private double conversionMultiple;
 
-    private BigDecimal quantity;
+    private double quantity;
 
-    private BigDecimal totalCalculatedAmount;
+    private double totalCalculatedAmount;
 }

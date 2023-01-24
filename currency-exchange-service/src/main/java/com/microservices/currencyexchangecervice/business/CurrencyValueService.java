@@ -56,7 +56,7 @@ public class CurrencyValueService {
             throw new RuntimeException(e);
         }
 
-        double out = (double)Math.round((coef1 / coef2) * 10000) / 10000;
+        double out = (double)Math.round((coef1 / coef2) * 10000000) / 10000000;
         return new Coefficient(val1.getCharCode(), val2.getCharCode(), out);
     }
 
