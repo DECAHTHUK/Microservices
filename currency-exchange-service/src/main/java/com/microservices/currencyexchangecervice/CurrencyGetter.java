@@ -64,7 +64,7 @@ public class CurrencyGetter {
         List<CurrencyValue> values = mapper.readValue(response.body(), new TypeReference<ArrayList<CurrencyValue>>() {
         });
         values.forEach(service::save);
-        service.save(new CurrencyValue(-1, 643, "RUB", 1, "Russian Ruble", "1,0"));
+        service.save(new CurrencyValue( 643, "RUB", 1, "Russian Ruble", "1,0"));
     }
 
     public void getCryptoValues() throws IOException, InterruptedException {

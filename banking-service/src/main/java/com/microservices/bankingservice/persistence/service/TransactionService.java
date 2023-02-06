@@ -4,6 +4,8 @@ import com.microservices.bankingservice.business.Transaction;
 import com.microservices.bankingservice.persistence.TransactionRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class TransactionService {
 
@@ -15,5 +17,9 @@ public class TransactionService {
 
     public void save(Transaction transaction) {
         repository.save(transaction);
+    }
+
+    public List<Transaction> findAllTransactions(long id) {
+        return repository.findAllByTo(id);
     }
 }

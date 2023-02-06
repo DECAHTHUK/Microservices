@@ -12,7 +12,7 @@ public class CurrencyConversionController {
     private CurrencyExchangeProxy proxy;
 
     //TODO feign fallback(handling exceptions)
-    @GetMapping("/currency-conversion-feign/from/{from}/to/{to}/quantity/{quantity}")
+    @GetMapping("/currency-conversion-feign/{from}/{to}/{quantity}")
     public CurrencyConversion calculateCurrencyConversionFeign(@PathVariable String from,
                                                           @PathVariable String to,
                                                           @PathVariable double quantity) {

@@ -4,10 +4,10 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import javax.persistence.*;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
+//TODO creation date stopper
 @Entity(name = "user")
 @Table(name = "users")
 @AllArgsConstructor
@@ -38,13 +38,13 @@ public class User {
     private List<Transaction> incomingTransactions = new ArrayList<>();
 
     @CreationTimestamp
-    private LocalDateTime lastTransaction;
+    private LocalDate lastTransaction;
 
     @CreationTimestamp
-    private LocalDateTime lastDollarConv;
+    private LocalDate lastDollarConv;
 
     @CreationTimestamp
-    private LocalDateTime lastEuroConv;
+    private LocalDate lastEuroConv;
 
     public User(long id) {
         this.id = id;

@@ -1,15 +1,15 @@
 package com.microservices.bankingservice.persistence.service;
 
-import com.microservices.bankingservice.business.Currency;
-import com.microservices.bankingservice.business.CurrencyConversion;
-import com.microservices.bankingservice.business.Transaction;
-import com.microservices.bankingservice.business.User;
+import com.microservices.bankingservice.business.*;
 import com.microservices.bankingservice.business.complex.Response;
 import com.microservices.bankingservice.business.complex.ResponseBuilder;
 import com.microservices.bankingservice.config.Configuration;
 import com.microservices.bankingservice.proxy.CurrencyConversionProxy;
+import com.microservices.bankingservice.proxy.CurrencyExchangeProxy;
 import com.microservices.bankingservice.proxy.LimitsProxy;
 import com.microservices.bankingservice.security.RoleConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
@@ -44,15 +44,14 @@ public class BankingLogic {
     private CurrencyConversionProxy currencyConversionProxy;
 
     @Autowired
+    private CurrencyExchangeProxy currencyExchangeProxy;
+
+    @Autowired
     private LimitsProxy limitsProxy;
 
-    private final RoleConverter converter = new RoleConverter();
+    Logger logger = LoggerFactory.getLogger(BankingLogic.class);
 
-    public Currency getTest(Jwt jwt) {
-        String username = jwt.getClaims().get("preferred_username").toString();
-        long id = userService.findByUsername(username).getId();
-        return currencyService.findByOwnerAndCharCode(id, "RUB");
-    }
+    private final RoleConverter converter = new RoleConverter();
 
     public String getStarterPack(Jwt jwt) {
         int capital = configuration.getBonusStandard();
@@ -82,79 +81,149 @@ public class BankingLogic {
         return currencyService.findAllByOwner(userService.findByUsername(username).getId());
     }
 
-    public Response convertValutes(String from, String to, double quantity, Jwt jwt) {
-        ResponseBuilder response;
+    public Response transferValutes(String to, String code, double quantity, Jwt jwt) {
+        String username = jwt.getClaims().get("preferred_username").toString();
+        System.out.println(jwt.getClaims().toString());
+        User user = userService.findByUsername(username);
+        long ownerId = user.getId();
 
+        User userTo = userService.findByUsername(to);
+        long userToId = userTo.getId();
+
+        // checking tha amount of money on wallet, trans limits
+        ResponseBuilder response = checkRoutineLimits(code, quantity, jwt, ownerId);
+        if (response.getStatus() != HttpStatus.OK) return response.build();
+
+        //checking limit on extern account
+        if (code.equals("USD") || code.equals("EUR")) {
+            response = checkWalletLimit(code, quantity, userToId, true);
+            if (response.getStatus() != HttpStatus.OK) return response.build();
+        }
+
+        // checking daily transfer limit
+        response = checkDailyTransLimits(user, code, quantity);
+        if (response.getStatus() != HttpStatus.OK) return response.build();
+
+        //building response and creating transactions
+        LocalDateTime timeNow = LocalDateTime.now();
+
+        Transaction transactionFrom = new Transaction(0, new User(ownerId), new User(userToId),
+                "Transfer to " + to, code, -quantity, timeNow);
+        Transaction transactionTo = new Transaction(0, new User(userToId), new User(ownerId),
+                "Transfer from " + username, code, quantity, timeNow);
+
+        double newFrom = currencyService.updateCurrency(ownerId, code, -quantity);
+        currencyService.updateCurrency(userToId, code, quantity);
+
+        transactionService.save(transactionFrom);
+        transactionService.save(transactionTo);
+
+        return response.newBalanceFrom(newFrom).from(code).build();
+    }
+
+    public Response convertValutes(String from, String to, double quantity, Jwt jwt) {
         String username = jwt.getClaims().get("preferred_username").toString();
         User user = userService.findByUsername(username);
         long ownerId = user.getId();
 
-        //checking valute quantity on the account
-        response = checkValuteQuantity(from, quantity, ownerId);
+        ResponseBuilder response = checkRoutineLimits(from, quantity, jwt, ownerId);
         if (response.getStatus() != HttpStatus.OK) return response.build();
 
         CurrencyConversion conversion = currencyConversionProxy
                 .calculateCurrencyConversionFeign(from, to, quantity);
-        System.out.println(conversion.toString());
 
         //checking if fits the limits
         if (conversion.getTo().equals("USD") || conversion.getTo().equals("EUR")) {
             response = checkConvLimit(to, conversion.getTotalCalculatedAmount(), jwt, ownerId);
-
             if (response.getStatus() != HttpStatus.OK) return response.build();
 
-            response = checkWalletLimit(to, conversion.getTotalCalculatedAmount(), ownerId);
+            response = checkWalletLimit(to, conversion.getTotalCalculatedAmount(), ownerId, false);
+            if (response.getStatus() != HttpStatus.OK) return response.build();
         }
 
         // building response and updating db-s
-        if (response.getStatus() == HttpStatus.OK) {
-            LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
-            Transaction transaction1 = new Transaction(0, null, new User(user.getId()),
-                    "Conversion", to, conversion.getTotalCalculatedAmount(), now);
-            Transaction transaction2 = new Transaction(0, new User(user.getId()), null,
-                    "Conversion", from, -quantity, now);
+        Transaction transaction1 = new Transaction(0, null, new User(user.getId()),
+                "Conversion", to, conversion.getTotalCalculatedAmount(), now);
+        Transaction transaction2 = new Transaction(0, new User(user.getId()), null,
+                "Conversion", from, -quantity, now);
 
-            double newFrom = currencyService.updateCurrency(ownerId, from, -quantity);
-            double newTo = currencyService.updateCurrency(ownerId, to, conversion.getTotalCalculatedAmount());
+        double newFrom = currencyService.updateCurrency(ownerId, from, -quantity);
+        double newTo = currencyService.updateCurrency(ownerId, to, conversion.getTotalCalculatedAmount());
 
-            if (to.equals("USD")) {
-                user.setLastDollarConv(now);
-                user.setCurrentDollarConv(conversion.getTotalCalculatedAmount());
-            } else if (to.equals("EUR")) {
-                user.setLastEuroConv(now);
-                user.setCurrentEuroConv(conversion.getTotalCalculatedAmount());
-            }
-            user.setLastTransaction(now);
-
-            userService.save(user);
-            transactionService.save(transaction1);
-            transactionService.save(transaction2);
-
-            response.newBalanceFrom(newFrom).newBalanceTo(newTo).from(from).to(to);
-            return response.build();
-        } else {
-            return response.build();
+        if (to.equals("USD")) {
+            user.setLastDollarConv(now.toLocalDate());
+            user.setCurrentDollarConv(user.getCurrentDollarConv() + conversion.getTotalCalculatedAmount());
+        } else if (to.equals("EUR")) {
+            user.setLastEuroConv(now.toLocalDate());
+            user.setCurrentEuroConv(user.getCurrentEuroConv() + conversion.getTotalCalculatedAmount());
         }
+        user.setLastTransaction(now.toLocalDate());
+
+        userService.save(user);
+        transactionService.save(transaction1);
+        transactionService.save(transaction2);
+
+        response.newBalanceFrom(newFrom).newBalanceTo(newTo).from(from).to(to);
+        return response.build();
     }
 
-    //TODO add trans limits control
+    public ResponseBuilder checkRoutineLimits(String code, double quantity, Jwt jwt, long ownerId) {
+        ResponseBuilder response;
+
+        //checking valute quantity on the account
+        response = checkValuteQuantity(code, quantity, ownerId);
+        if (response.getStatus() != HttpStatus.OK) return response;
+
+        //checking trans amount
+        response = checkTransMinMax(code, quantity, jwt);
+        return response;
+    }
+
+    public ResponseBuilder checkDailyTransLimits(User user, String code, double quantity) {
+        int limit = limitsProxy.getLimits("trans", "limit");
+
+        if (user.getLastTransaction().isBefore(LocalDate.now())) {
+            user.setCurrentTransLimit(0);
+        }
+        CurrencyConversion conv = currencyConversionProxy.calculateCurrencyConversionFeign(code, "RUB", quantity);
+
+        if (limit < conv.getTotalCalculatedAmount() + user.getCurrentTransLimit()) {
+            return new ResponseBuilder().status(HttpStatus.BAD_REQUEST)
+                    .description("Your daily transfer limit will be exceeded by:"
+                            + (conv.getTotalCalculatedAmount() + user.getCurrentTransLimit() - limit) +
+                    "RUB. Come back tomorrow:(");
+        }
+        user.setCurrentTransLimit(user.getCurrentTransLimit() + conv.getTotalCalculatedAmount());
+        user.setLastTransaction(LocalDate.now());
+        userService.save(user);
+        return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
+    }
+
+    public ResponseBuilder checkTransMinMax(String code, double quantity, Jwt jwt) {
+        int min = limitsProxy.getLimits("trans", "min");
+        int max = checkPrem(jwt) ? limitsProxy.getLimits("trans", "premium") :
+                limitsProxy.getLimits("trans", "max");
+
+        CurrencyConversion conversion = currencyConversionProxy.calculateCurrencyConversionFeign(code, "RUB", quantity);
+        if (conversion.getTotalCalculatedAmount() < min) {
+            return new ResponseBuilder().status(HttpStatus.BAD_REQUEST).description("Transaction amount is lower than limit! Limit: " + min + " RUB.");
+        } else if (conversion.getTotalCalculatedAmount() > max) {
+            return new ResponseBuilder().status(HttpStatus.BAD_REQUEST).description("Transaction amount is higher than limit! Limit: " + max + " RUB");
+        }
+        return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
+    }
 
     public ResponseBuilder checkConvLimit(String code, double quantity, Jwt jwt, long ownerId) {
-        int daily;
-
-        //getting limits
-        if (checkPrem(jwt)) {
-            daily = limitsProxy.getLimits(code, "premium");
-        } else {
-            daily = limitsProxy.getLimits(code, "standard");
-        }
+        int daily = checkPrem(jwt) ? limitsProxy.getLimits(code, "premium") :
+                limitsProxy.getLimits(code, "standard");
 
         //checking conversion limits
         User user = userService.findById(ownerId);
         if (Objects.equals(code, "USD")) {
             LocalDate now = LocalDate.now();
-            LocalDate lastTrans = user.getLastDollarConv().toLocalDate();
+            LocalDate lastTrans = user.getLastDollarConv();
             if (now.isAfter(lastTrans)) {
                 user.setCurrentDollarConv(0);
             }
@@ -167,22 +236,22 @@ public class BankingLogic {
             }
         } else {
             LocalDate now = LocalDate.now();
-            LocalDate lastTrans = user.getLastEuroConv().toLocalDate();
+            LocalDate lastTrans = user.getLastEuroConv();
             if (now.isAfter(lastTrans)) {
                 user.setCurrentEuroConv(0);
             }
             userService.save(user);
 
-            if (user.getCurrentDollarConv() + quantity > daily) {
+            if (user.getCurrentEuroConv() + quantity > daily) {
                 return new ResponseBuilder().status(HttpStatus.BAD_REQUEST)
                         .description("Daily EUR convert will be exceeded." +
-                                " Daily limit left: " + (daily - user.getCurrentDollarConv()) + " EUR");
+                                " Daily limit left: " + (daily - user.getCurrentEuroConv()) + " EUR");
             }
         }
         return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
     }
 
-    public ResponseBuilder checkWalletLimit(String code, double quantity, long ownerId) {
+    public ResponseBuilder checkWalletLimit(String code, double quantity, long ownerId, boolean extern) {
         int maximum = limitsProxy.getLimits(code, "max");
 
         Currency currency = currencyService.findByOwnerAndCharCode(ownerId, code);
@@ -192,10 +261,17 @@ public class BankingLogic {
         }
 
         if (currency.getQuantity() + quantity > maximum) {
+            String description;
+            if (extern) {
+                description = String.format("The account's limit to hold for %s will be exceeded." +
+                        " Operation canceled.", code);
+            } else {
+                description = String.format("Your limit to hold for %s on your account" +
+                                " is %d, limit will be exceeded for %a. Current balance: %a %s",
+                        code, maximum, currency.getQuantity() + quantity - maximum, currency.getQuantity(), code);
+            }
             return new ResponseBuilder().status(HttpStatus.BAD_REQUEST)
-                    .description(String.format("Your limit to hold for %s on your account" +
-                                    " is %d, limit will be exceeded for %a. Current balance: %a %s",
-                            code, maximum, currency.getQuantity() + quantity - maximum, currency.getQuantity(), code));
+                    .description(description);
         }
         return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
     }
@@ -213,6 +289,19 @@ public class BankingLogic {
 
         }
         return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
+    }
+
+    public List<CurrencyValue> getAllCurrencies() {
+        List<CurrencyValue> values = currencyExchangeProxy.getAllCurrencies();
+        System.out.println(values);
+        return values;
+    }
+
+    public List<Transaction> findAllTransactions(Jwt jwt) {
+        String username = jwt.getClaims().get("preferred_username").toString();
+        User user = userService.findByUsername(username);
+        long ownerId = user.getId();
+        return transactionService.findAllTransactions(ownerId);
     }
 
     public boolean checkPrem(Jwt jwt) {
