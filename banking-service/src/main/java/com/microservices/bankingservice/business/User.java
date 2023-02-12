@@ -46,6 +46,11 @@ public class User {
     @CreationTimestamp
     private LocalDate lastEuroConv;
 
+    private LocalDate lastBonus;
+
+    //TODO make use of it
+    private LocalDate creationTime;
+
     public User(long id) {
         this.id = id;
     }

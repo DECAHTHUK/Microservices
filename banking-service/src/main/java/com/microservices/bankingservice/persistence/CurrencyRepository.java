@@ -9,7 +9,6 @@ import java.util.List;
 
 @Repository
 public interface CurrencyRepository extends JpaRepository<Currency, Long> {
-    //TODO check indexesWorking, otherwise manual query (actually they are not, need manual)
     Currency findByOwnerAndCharCode(User owner, String charCode);
 
     List<Currency> findAllByOwner(User owner);

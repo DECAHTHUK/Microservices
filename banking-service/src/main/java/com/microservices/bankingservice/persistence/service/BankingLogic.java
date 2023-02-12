@@ -1,7 +1,6 @@
 package com.microservices.bankingservice.persistence.service;
 
 import com.microservices.bankingservice.business.*;
-import com.microservices.bankingservice.business.complex.Response;
 import com.microservices.bankingservice.business.complex.ResponseBuilder;
 import com.microservices.bankingservice.config.Configuration;
 import com.microservices.bankingservice.proxy.CurrencyConversionProxy;
@@ -15,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.ui.Model;
+import org.springframework.web.servlet.ModelAndView;
 
 import javax.transaction.Transactional;
 import java.time.LocalDate;
@@ -58,15 +59,15 @@ public class BankingLogic {
         String username = jwt.getClaims().get("preferred_username").toString();
 
         if (userService.findByUsername(username) != null) {
-            return "You already got your bonus, go away!";
+            return "You already got your bonus, go away!\n/banking/menu";
         }
 
         String ans;
-        ans = "Meh, you are standard, eat your filthy " + capital + " RUB";
+        ans = "Meh, you are standard, eat your filthy " + capital + " RUB.\n/banking/menu";
 
         if (checkPrem(jwt)) {
             capital = configuration.getBonusPremium();
-            ans = "OOO, seems like you are a premium user, granted: " + capital + " RUB!";
+            ans = "OOO, seems like you are a premium user, granted: " + capital + " RUB!\n/banking/menu";
         }
 
         long userId = userService.createNewUser(username);
@@ -76,14 +77,30 @@ public class BankingLogic {
         return ans;
     }
 
-    public List<Currency> getWallet(Jwt jwt) {
+    public ModelAndView getDailyBonus(Jwt jwt) {
         String username = jwt.getClaims().get("preferred_username").toString();
-        return currencyService.findAllByOwner(userService.findByUsername(username).getId());
+        User user = userService.findByUsername(username);
+        long ownerId = user.getId();
+        //TODO this
+        return null;
     }
 
-    public Response transferValutes(String to, String code, double quantity, Jwt jwt) {
+    public ModelAndView getWallet(Jwt jwt, Model model) {
         String username = jwt.getClaims().get("preferred_username").toString();
-        System.out.println(jwt.getClaims().toString());
+        if (!checkRegistered(username)) {
+            return new ModelAndView("redirect");
+        }
+        List<Currency> currencies = currencyService.findAllByOwner(userService.findByUsername(username).getId());
+        model.addAttribute("currencies", currencies);
+        return new ModelAndView("wallet");
+    }
+
+    public ModelAndView transferValutes(String to, String code, double quantity, Jwt jwt, Model model) {
+        String username = jwt.getClaims().get("preferred_username").toString();
+        if (!checkRegistered(username)) {
+            return new ModelAndView("redirect");
+        }
+
         User user = userService.findByUsername(username);
         long ownerId = user.getId();
 
@@ -92,17 +109,17 @@ public class BankingLogic {
 
         // checking tha amount of money on wallet, trans limits
         ResponseBuilder response = checkRoutineLimits(code, quantity, jwt, ownerId);
-        if (response.getStatus() != HttpStatus.OK) return response.build();
+        if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
 
         //checking limit on extern account
         if (code.equals("USD") || code.equals("EUR")) {
             response = checkWalletLimit(code, quantity, userToId, true);
-            if (response.getStatus() != HttpStatus.OK) return response.build();
+            if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
         }
 
         // checking daily transfer limit
         response = checkDailyTransLimits(user, code, quantity);
-        if (response.getStatus() != HttpStatus.OK) return response.build();
+        if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
 
         //building response and creating transactions
         LocalDateTime timeNow = LocalDateTime.now();
@@ -118,16 +135,22 @@ public class BankingLogic {
         transactionService.save(transactionFrom);
         transactionService.save(transactionTo);
 
-        return response.newBalanceFrom(newFrom).from(code).build();
+        response.newBalanceFrom(newFrom).from(code);
+        model.addAttribute("newBalanceFrom", response.getNewBalanceFrom());
+        model.addAttribute("code", response.getFrom());
+        return new ModelAndView("transfer");
     }
 
-    public Response convertValutes(String from, String to, double quantity, Jwt jwt) {
+    public ModelAndView convertValutes(String from, String to, double quantity, Jwt jwt, Model model) {
         String username = jwt.getClaims().get("preferred_username").toString();
+        if (!checkRegistered(username)) {
+            return new ModelAndView("redirect");
+        }
         User user = userService.findByUsername(username);
         long ownerId = user.getId();
 
         ResponseBuilder response = checkRoutineLimits(from, quantity, jwt, ownerId);
-        if (response.getStatus() != HttpStatus.OK) return response.build();
+        if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
 
         CurrencyConversion conversion = currencyConversionProxy
                 .calculateCurrencyConversionFeign(from, to, quantity);
@@ -135,10 +158,10 @@ public class BankingLogic {
         //checking if fits the limits
         if (conversion.getTo().equals("USD") || conversion.getTo().equals("EUR")) {
             response = checkConvLimit(to, conversion.getTotalCalculatedAmount(), jwt, ownerId);
-            if (response.getStatus() != HttpStatus.OK) return response.build();
+            if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
 
             response = checkWalletLimit(to, conversion.getTotalCalculatedAmount(), ownerId, false);
-            if (response.getStatus() != HttpStatus.OK) return response.build();
+            if (response.getStatus() != HttpStatus.OK) return errorResponse(response, model);
         }
 
         // building response and updating db-s
@@ -166,7 +189,11 @@ public class BankingLogic {
         transactionService.save(transaction2);
 
         response.newBalanceFrom(newFrom).newBalanceTo(newTo).from(from).to(to);
-        return response.build();
+        model.addAttribute("newBalanceFrom", response.getNewBalanceFrom());
+        model.addAttribute("newBalanceTo", response.getNewBalanceTo());
+        model.addAttribute("from", response.getFrom());
+        model.addAttribute("to", response.getTo());
+        return new ModelAndView("conversion");
     }
 
     public ResponseBuilder checkRoutineLimits(String code, double quantity, Jwt jwt, long ownerId) {
@@ -291,17 +318,24 @@ public class BankingLogic {
         return new ResponseBuilder().status(HttpStatus.OK).description("Success!");
     }
 
-    public List<CurrencyValue> getAllCurrencies() {
+    public ModelAndView getAllCurrencies(Model model) {
         List<CurrencyValue> values = currencyExchangeProxy.getAllCurrencies();
-        System.out.println(values);
-        return values;
+        model.addAttribute("currencies", values);
+        return new ModelAndView("currencies");
     }
 
-    public List<Transaction> findAllTransactions(Jwt jwt) {
+    public ModelAndView findAllTransactions(Jwt jwt, Model model) {
         String username = jwt.getClaims().get("preferred_username").toString();
+        if (!checkRegistered(username)) {
+            return new ModelAndView("redirect");
+        }
         User user = userService.findByUsername(username);
         long ownerId = user.getId();
-        return transactionService.findAllTransactions(ownerId);
+
+        List<Transaction> transactions = transactionService.findAllTransactions(ownerId);
+
+        model.addAttribute("transactions", transactions);
+        return new ModelAndView("transactions");
     }
 
     public boolean checkPrem(Jwt jwt) {
@@ -312,5 +346,15 @@ public class BankingLogic {
             }
         }
         return false;
+    }
+
+    public boolean checkRegistered(String username) {
+        return userService.findByUsername(username) != null;
+    }
+
+    public ModelAndView errorResponse(ResponseBuilder builder, Model model) {
+        model.addAttribute("description", builder.getDescription());
+        model.addAttribute("status", builder.getStatus().toString());
+        return new ModelAndView("error");
     }
 }
