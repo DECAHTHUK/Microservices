@@ -27,6 +27,10 @@ public class ApiGatewayConfig {
                 .route(p -> p.path("/banking/**")
                         .filters(GatewayFilterSpec::tokenRelay)
                         .uri("lb://banking-service"))
+                .route(p -> p.path("/**")
+                        .filters(f -> f.rewritePath("/(?<segment>.*)", "/banking/menu")
+                                .tokenRelay())
+                        .uri("lb://banking-service"))
                 .build();
     }
 }
