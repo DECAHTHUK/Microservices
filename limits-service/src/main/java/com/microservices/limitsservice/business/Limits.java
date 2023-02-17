@@ -10,6 +10,17 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Limits {
-    private int minimum;
-    private int maximum;
+    private int minimumTrans;
+
+    private int maximumTrans;
+
+    private int premiumMaximumTrans;
+
+    private int dollarInAccountMaximum;
+
+    private int premiumDollarInAccountMaximum;
+
+    private int euroInAccountMaximum;
+
+    private int premiumEuroInAccountMaximum;
 }

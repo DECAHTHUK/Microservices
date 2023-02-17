@@ -1,14 +1,13 @@
-package com.microservices.currencyconverisonservice;
+package com.microservices.bankingservice.business;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
 
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@ToString
 public class CurrencyConversion {
 
     private long id;
@@ -22,4 +21,5 @@ public class CurrencyConversion {
     private double quantity;
 
     private double totalCalculatedAmount;
+
 }

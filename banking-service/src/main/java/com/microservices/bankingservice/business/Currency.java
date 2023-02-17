@@ -1,5 +1,6 @@
 package com.microservices.bankingservice.business;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import javax.persistence.*;
@@ -17,8 +18,9 @@ public class Currency {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_user")
+    @JsonIgnore
     private User owner;
 
     @Column(name = "charCode")

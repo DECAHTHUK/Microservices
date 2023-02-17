@@ -6,13 +6,14 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.text.NumberFormat;
 import java.text.ParseException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -20,9 +21,6 @@ public class CurrencyValueService {
     private final Logger logger = LoggerFactory.getLogger(CircuitBreakerController.class);
     @Autowired
     CurrencyValueRepository repository;
-
-    @Autowired
-    Environment environment;
 
 
     public CurrencyValue findByCodes(String code) {
@@ -52,15 +50,19 @@ public class CurrencyValueService {
             coef1 = (nf.parse(val1.getPower())).doubleValue() / val1.getNominal();
             coef2 = (nf.parse(val2.getPower())).doubleValue() / val2.getNominal();
         } catch (ParseException e) {
-            logger.error("Error while parsing coefficient: " + e.getStackTrace());
+            logger.error("Error while parsing coefficient: " + Arrays.toString(e.getStackTrace()));
             throw new RuntimeException(e);
         }
 
-        double out = (double)Math.round((coef1 / coef2) * 10000) / 10000;
+        double out = (double)Math.round((coef1 / coef2) * 10000000) / 10000000;
         return new Coefficient(val1.getCharCode(), val2.getCharCode(), out);
     }
 
     public void save(CurrencyValue value) {
+        CurrencyValue currencyValue = repository.findByCharCode(value.getCharCode());
+        if (currencyValue != null) {
+            value.setId(currencyValue.getId());
+        }
         repository.save(value);
     }
 
@@ -72,7 +74,11 @@ public class CurrencyValueService {
         newPower = newPower.replaceAll("\\.", ",");
 
         value.setPower(newPower);
-        repository.save(value);
+        save(value);
+    }
+
+    public List<CurrencyValue> findAll() {
+        return repository.findAll();
     }
 
 

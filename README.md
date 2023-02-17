@@ -20,10 +20,11 @@ A pet project with a usage of all the skills I have(like a glock 19 but with sup
 3. Converting any value into another with specified char encoding or numeric codes(ISO 4217) for national currencies.
 4. Registering with keycloak.
 5. Creating your wallet, getting entry bonus, transferring and converting valutes.
+6. Html + FreeMarker interface(it is really fancy ahahahahah(meme-ish))
 
 ## In progress:
-1. Feign and resilience4j coverage
-2. MEmes(memes with me, LIKE, EVERYWHERE) for money, ehehe. User-friendly interface with html-s and thymeleaf(or maybe freemarker). Daily money. Quests or smth.
+1. Enhancing banking system
+2. Feign and resilience4j coverage
 
 ## TODO:
 1. Documentation.

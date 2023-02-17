@@ -16,7 +16,7 @@ public class SecurityConfig {
         http
                     .authorizeExchange()
                     .pathMatchers("/actuator/**", "/", "/currency-exchange/**",
-                            "/currency-converter/**", "/banking/open", "/logout.html", "/")
+                            "/currency-converter/**", "/logout.html")
                     .permitAll()
                 .and()
                     .authorizeExchange()

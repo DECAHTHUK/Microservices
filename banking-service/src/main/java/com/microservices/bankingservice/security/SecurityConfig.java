@@ -8,7 +8,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
-
+//TODO configure error mapping
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(securedEnabled = true, prePostEnabled = true)
@@ -22,7 +22,7 @@ public class SecurityConfig {
         http
                 .authorizeRequests()
                     .antMatchers("/banking/open/**", "/actuator/**",
-                            "/error").permitAll()
+                            "/error", "/get-cource").permitAll()
                     .anyRequest().authenticated()
                 .and()
                     .oauth2ResourceServer()

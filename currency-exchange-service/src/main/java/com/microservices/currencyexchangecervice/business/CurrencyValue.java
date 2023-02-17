@@ -20,7 +20,7 @@ import javax.persistence.Id;
 @JsonIgnoreProperties(value = {"Date", "name", "ID", "id"})
 public class CurrencyValue {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.TABLE)
     private long id;
 
     @JacksonXmlElementWrapper(localName = "NumCode")
@@ -42,6 +42,14 @@ public class CurrencyValue {
         this.numCode = numCode;
         this.charCode = charCode;
         this.nominal = nominal;
+        this.power = power;
+    }
+
+    public CurrencyValue(int numCode, String charCode, int nominal, String currencyName, String power) {
+        this.numCode = numCode;
+        this.charCode = charCode;
+        this.nominal = nominal;
+        this.currencyName = currencyName;
         this.power = power;
     }
 }
