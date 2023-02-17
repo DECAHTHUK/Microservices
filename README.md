@@ -19,7 +19,7 @@ A pet project with a usage of all the skills I have(like a glock 19 but with sup
 2. Getting top-100 cryptocurrencies values hourly.
 3. Converting any value into another with specified char encoding or numeric codes(ISO 4217) for national currencies.
 4. Registering with keycloak.
-5. Creating your wallet, getting entry bonus, transferring and converting valutes.
+5. Creating your wallet, getting entry and daily bonuses, transferring and converting valutes.
 6. Html + FreeMarker interface(it is really fancy ahahahahah(meme-ish))
 
 ## In progress:
