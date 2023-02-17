@@ -63,6 +63,7 @@ public class CurrencyGetter {
         XmlMapper mapper = new XmlMapper();
         List<CurrencyValue> values = mapper.readValue(response.body(), new TypeReference<ArrayList<CurrencyValue>>() {
         });
+        values.remove(0);
         values.forEach(service::save);
         service.save(new CurrencyValue( 643, "RUB", 1, "Russian Ruble", "1,0"));
     }

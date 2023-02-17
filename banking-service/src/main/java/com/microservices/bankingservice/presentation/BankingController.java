@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.validation.constraints.Digits;
-import javax.ws.rs.core.MediaType;
 
 @RestController
 @RequestMapping("/banking")
@@ -32,14 +31,14 @@ public class BankingController {
     }
 
     @GetMapping("/get-daily-bonus")
-    public ModelAndView getDailyBonus(@AuthenticationPrincipal Jwt jwt) {
-        return logic.getDailyBonus(jwt);
+    public ModelAndView getDailyBonus(@AuthenticationPrincipal Jwt jwt, Model model) {
+        return logic.getDailyBonus(jwt, model);
     }
 
     @GetMapping("/wallet")
     public ModelAndView getWallet(@AuthenticationPrincipal Jwt jwt, Model model) {return logic.getWallet(jwt, model);}
 
-    @GetMapping(value = "/convert/{from}/{to}/{quantity}", produces = MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/convert/{from}/{to}/{quantity}")
     @Validated
     public ModelAndView convertValutes(@PathVariable String from,
                               @PathVariable String to,
@@ -48,7 +47,7 @@ public class BankingController {
         return logic.convertValutes(from, to, quantity, jwt, model);
     }
 
-    @GetMapping(value = "/transfer/{to}/{code}/{quantity}", produces = MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/transfer/{to}/{code}/{quantity}")
     @Validated
     public ModelAndView transferValute(@PathVariable String to,
                                    @PathVariable String code,
@@ -57,12 +56,12 @@ public class BankingController {
         return logic.transferValutes(to, code, quantity, jwt, model);
     }
 
-    @GetMapping(value = "/transactions", produces = MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/transactions")
     public ModelAndView getTransactions(@AuthenticationPrincipal Jwt jwt, Model model) {
         return logic.findAllTransactions(jwt, model);
     }
 
-    @GetMapping(value = "/get-course", produces = MediaType.APPLICATION_JSON)
+    @GetMapping(value = "/get-course")
     public ModelAndView getCource(Model model) {
         return logic.getAllCurrencies(model);
     }

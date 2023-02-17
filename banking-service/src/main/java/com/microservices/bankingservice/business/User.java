@@ -7,7 +7,7 @@ import javax.persistence.*;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-//TODO creation date stopper
+
 @Entity(name = "user")
 @Table(name = "users")
 @AllArgsConstructor
@@ -47,9 +47,6 @@ public class User {
     private LocalDate lastEuroConv;
 
     private LocalDate lastBonus;
-
-    //TODO make use of it
-    private LocalDate creationTime;
 
     public User(long id) {
         this.id = id;

@@ -23,8 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 
-//TODO redirect unregistered to get bonus
-
 @Service
 @Transactional
 public class BankingLogic {
@@ -72,17 +70,32 @@ public class BankingLogic {
 
         long userId = userService.createNewUser(username);
         currencyService.save(new Currency(0, new User(userId), "RUB", capital));
-        transactionService.save(new Transaction(0, null, new User(userId),
+        transactionService.save(new Transaction(0, new User(userId), null,
                 "Entry bonus for registration", "RUB", capital, LocalDateTime.now()));
         return ans;
     }
 
-    public ModelAndView getDailyBonus(Jwt jwt) {
+    public ModelAndView getDailyBonus(Jwt jwt, Model model) {
         String username = jwt.getClaims().get("preferred_username").toString();
+        if (!checkRegistered(username)) {
+            return new ModelAndView("redirect");
+        }
         User user = userService.findByUsername(username);
-        long ownerId = user.getId();
-        //TODO this
-        return null;
+        long userId = user.getId();
+
+        String message;
+        if (user.getLastBonus() == null || user.getLastBonus().isBefore(LocalDate.now())) {
+            user.setLastBonus(LocalDate.now());
+            userService.save(user);
+            currencyService.updateCurrency(userId, "RUB", 100000);
+            transactionService.save(new Transaction(0, new User(userId), null, "Daily bonus",
+                    "RUB", 100000, LocalDateTime.now()));
+            message = "Congratz, you got 100000 RUB!";
+        } else {
+            message = "Nah, you already got your bonus today.";
+        }
+        model.addAttribute("message", message);
+        return new ModelAndView("daily");
     }
 
     public ModelAndView getWallet(Jwt jwt, Model model) {
@@ -167,7 +180,7 @@ public class BankingLogic {
         // building response and updating db-s
         LocalDateTime now = LocalDateTime.now();
 
-        Transaction transaction1 = new Transaction(0, null, new User(user.getId()),
+        Transaction transaction1 = new Transaction(0, new User(user.getId()), null,
                 "Conversion", to, conversion.getTotalCalculatedAmount(), now);
         Transaction transaction2 = new Transaction(0, new User(user.getId()), null,
                 "Conversion", from, -quantity, now);
@@ -355,6 +368,6 @@ public class BankingLogic {
     public ModelAndView errorResponse(ResponseBuilder builder, Model model) {
         model.addAttribute("description", builder.getDescription());
         model.addAttribute("status", builder.getStatus().toString());
-        return new ModelAndView("error");
+        return new ModelAndView("myerror");
     }
 }

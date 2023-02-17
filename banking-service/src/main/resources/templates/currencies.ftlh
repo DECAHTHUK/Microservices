@@ -30,10 +30,10 @@
         <tr>
             <td>${currency?index + 1}</td>
             <td>${currency.numCode}</td>
-            <td>${currency.charCode}</td>
+            <td>${currency.charCode!"null"}</td>
             <td>${currency.nominal}</td>
-            <td>${currency.currencyName}</td>
-            <td>${currency.power}</td>
+            <td>${currency.currencyName!"No name provided"}</td>
+            <td>${currency.power!"null"}</td>
         </tr>
     </#list>
 </table>
