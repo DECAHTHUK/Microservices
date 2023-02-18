@@ -1,6 +1,10 @@
 package com.microservices.bankingservice.presentation;
 
 import com.microservices.bankingservice.persistence.service.BankingLogic;
+import io.github.resilience4j.bulkhead.annotation.Bulkhead;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.ui.Model;
@@ -15,30 +19,42 @@ import javax.validation.constraints.Digits;
 public class BankingController {
     private final BankingLogic logic;
 
+    Logger logger = LoggerFactory.getLogger(BankingController.class);
+
     public BankingController(BankingLogic logic) {
         this.logic = logic;
     }
 
     @GetMapping("/menu")
+    @RateLimiter(name = "high-load", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "high-load", fallbackMethod = "bulkFallback")
     public ModelAndView mainMenu(Model model, @AuthenticationPrincipal Jwt jwt) {
         model.addAttribute("username", jwt.getClaims().get("preferred_username").toString());
         return new ModelAndView("main");
     }
 
     @GetMapping("/get-starter-bonus")
+    @RateLimiter(name = "low-load", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "low-load", fallbackMethod = "bulkFallback")
     public String getStarterPack(@AuthenticationPrincipal Jwt jwt) {
         return logic.getStarterPack(jwt);
     }
 
     @GetMapping("/get-daily-bonus")
+    @RateLimiter(name = "default", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "default", fallbackMethod = "bulkFallback")
     public ModelAndView getDailyBonus(@AuthenticationPrincipal Jwt jwt, Model model) {
         return logic.getDailyBonus(jwt, model);
     }
 
     @GetMapping("/wallet")
+    @RateLimiter(name = "high-load", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "high-load", fallbackMethod = "bulkFallback")
     public ModelAndView getWallet(@AuthenticationPrincipal Jwt jwt, Model model) {return logic.getWallet(jwt, model);}
 
     @GetMapping(value = "/convert/{from}/{to}/{quantity}")
+    @RateLimiter(name = "default", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "default", fallbackMethod = "bulkFallback")
     @Validated
     public ModelAndView convertValutes(@PathVariable String from,
                               @PathVariable String to,
@@ -48,6 +64,8 @@ public class BankingController {
     }
 
     @GetMapping(value = "/transfer/{to}/{code}/{quantity}")
+    @RateLimiter(name = "default", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "default", fallbackMethod = "bulkFallback")
     @Validated
     public ModelAndView transferValute(@PathVariable String to,
                                    @PathVariable String code,
@@ -57,13 +75,26 @@ public class BankingController {
     }
 
     @GetMapping(value = "/transactions")
+    @RateLimiter(name = "default", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "default", fallbackMethod = "bulkFallback")
     public ModelAndView getTransactions(@AuthenticationPrincipal Jwt jwt, Model model) {
         return logic.findAllTransactions(jwt, model);
     }
 
     @GetMapping(value = "/get-course")
+    @RateLimiter(name = "high-load", fallbackMethod = "rateFallback")
+    @Bulkhead(name = "high-load", fallbackMethod = "bulkFallback")
     public ModelAndView getCource(Model model) {
         return logic.getAllCurrencies(model);
     }
 
+    public String rateFallback(Throwable t) {
+        logger.error("Rate limiter has blocked the request, cause - {}", t.toString());
+        return "We are experiencing a high load on our servers right now. Try again later...";
+    }
+
+    public String bulkFallback(Throwable t) {
+        logger.error("Bulkhead has blocked the request, cause - {}", t.toString());
+        return "We are experiencing a high load on our servers right now. Try again later...";
+    }
 }
