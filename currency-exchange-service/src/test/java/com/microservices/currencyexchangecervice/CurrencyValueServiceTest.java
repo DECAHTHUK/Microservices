@@ -48,7 +48,7 @@ public class CurrencyValueServiceTest {
     @ParameterizedTest
     @MethodSource("provideValuesForCoefficient")
     void testGetCoefficient_whenValuesProvided_shouldReturnAppropriateCoefficient(
-            String from, String to, Coefficient expected) {
+            String from, String to, Coefficient expected) throws Exception {
 
         lenient().when(repository.findByNumCode(1)).thenReturn(val1); //lenient to avoid mockito stubbing
         lenient().when(repository.findByNumCode(123)).thenReturn(val2);

@@ -321,7 +321,7 @@ public class BankingLogic {
 
         if (currencyFrom.getQuantity() < quantity) {
             return new ResponseBuilder().status(HttpStatus.BAD_REQUEST)
-                    .description("Insufficient amount of " + code + "on balance. Expected: " + quantity + ", got: " + currencyFrom.getQuantity());
+                    .description("Insufficient amount of " + code + " on balance. Expected: " + quantity + ", got: " + currencyFrom.getQuantity());
 
         }
         return new ResponseBuilder().status(HttpStatus.OK).description("Success!");

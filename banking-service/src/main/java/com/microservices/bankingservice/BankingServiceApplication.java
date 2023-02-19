@@ -4,8 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
-//TODO MEmes and quiz for prem
 //TODO add vault
+//TODO refactoring + versioning
 @SpringBootApplication
 @EnableFeignClients
 public class BankingServiceApplication {

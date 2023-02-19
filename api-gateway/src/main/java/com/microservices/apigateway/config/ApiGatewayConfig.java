@@ -1,10 +1,12 @@
-package com.microservices.apigateway;
+package com.microservices.apigateway.config;
 
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import javax.servlet.http.HttpServletRequest;
 
 
 @Configuration
@@ -26,10 +28,6 @@ public class ApiGatewayConfig {
                         .uri("lb://currency-conversion"))
                 .route(p -> p.path("/banking/**")
                         .filters(GatewayFilterSpec::tokenRelay)
-                        .uri("lb://banking-service"))
-                .route(p -> p.path("/**")
-                        .filters(f -> f.rewritePath("/(?<segment>.*)", "/banking/menu")
-                                .tokenRelay())
                         .uri("lb://banking-service"))
                 .build();
     }

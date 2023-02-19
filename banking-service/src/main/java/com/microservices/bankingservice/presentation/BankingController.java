@@ -28,14 +28,14 @@ public class BankingController {
     @GetMapping("/menu")
     @RateLimiter(name = "high-load", fallbackMethod = "rateFallback")
     @Bulkhead(name = "high-load", fallbackMethod = "bulkFallback")
-    public ModelAndView mainMenu(Model model, @AuthenticationPrincipal Jwt jwt) {
+    public ModelAndView mainMenu(@AuthenticationPrincipal Jwt jwt, Model model) {
         model.addAttribute("username", jwt.getClaims().get("preferred_username").toString());
         return new ModelAndView("main");
     }
 
     @GetMapping("/get-starter-bonus")
-    @RateLimiter(name = "low-load", fallbackMethod = "rateFallback")
-    @Bulkhead(name = "low-load", fallbackMethod = "bulkFallback")
+    @RateLimiter(name = "low-load")
+    @Bulkhead(name = "low-load")
     public String getStarterPack(@AuthenticationPrincipal Jwt jwt) {
         return logic.getStarterPack(jwt);
     }
@@ -88,13 +88,49 @@ public class BankingController {
         return logic.getAllCurrencies(model);
     }
 
-    public String rateFallback(Throwable t) {
-        logger.error("Rate limiter has blocked the request, cause - {}", t.toString());
-        return "We are experiencing a high load on our servers right now. Try again later...";
+    public ModelAndView rateFallback(String from, String to, double quantity, Jwt jwt, Model model, Throwable e) {
+        logger.error("Rate limiter has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
     }
 
-    public String bulkFallback(Throwable t) {
-        logger.error("Bulkhead has blocked the request, cause - {}", t.toString());
-        return "We are experiencing a high load on our servers right now. Try again later...";
+    public ModelAndView bulkFallback(String from, String to, double quantity, Jwt jwt, Model model, Throwable e) {
+        logger.error("Bulkhead has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
+    }
+
+    public ModelAndView rateFallback(Jwt jwt, Model model, Throwable e) {
+        logger.error("Rate limiter has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
+    }
+
+    public ModelAndView bulkFallback(Jwt jwt, Model model, Throwable e) {
+        logger.error("Bulkhead has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
+    }
+
+    public String rateFallback(Jwt jwt, Throwable e) {
+        logger.error("Rate limiter has blocked the request, cause - {}", e.toString());
+        return e.getMessage();
+    }
+
+    public String bulkFallback(Jwt jwt, Throwable e) {
+        logger.error("Bulkhead has blocked the request, cause - {}", e.toString());
+        return e.getMessage();
+    }
+
+    public ModelAndView rateFallback(Model model, Throwable e) {
+        logger.error("Rate limiter has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
+    }
+
+    public ModelAndView bulkFallback(Model model, Throwable e) {
+        logger.error("Bulkhead has blocked the request, cause - {}", e.toString());
+        model.addAttribute("response", e.getMessage());
+        return new ModelAndView("error");
     }
 }

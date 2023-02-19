@@ -33,7 +33,7 @@
 <body>
 <h3>Return to the <a href="/banking/menu">menu</a></h3>
 <h1>Something wrong...</h1>
-<h2>${response!"Seems like one of my services is down... Try again later"}</h2>
+<h2>Internal server error. My bad... I'm on it!</h2>
 <p>&nbsp;</p>
 <p><img src="https://i.postimg.cc/gJ1Xbx9Y/8-M5-Jp-Ac-Zu-AQ.jpg" alt="Грустный шмэбрик" width="560" height="560" >
 </body>

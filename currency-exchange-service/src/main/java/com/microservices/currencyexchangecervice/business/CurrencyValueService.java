@@ -1,6 +1,5 @@
 package com.microservices.currencyexchangecervice.business;
 
-import com.microservices.currencyexchangecervice.CircuitBreakerController;
 import com.microservices.currencyexchangecervice.persistence.CurrencyValueRepository;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -18,21 +17,19 @@ import java.util.Locale;
 
 @Service
 public class CurrencyValueService {
-    private final Logger logger = LoggerFactory.getLogger(CircuitBreakerController.class);
+    private final Logger logger = LoggerFactory.getLogger(CurrencyValueService.class);
     @Autowired
     CurrencyValueRepository repository;
-
-
     public CurrencyValue findByCodes(String code) {
         CurrencyValue value;
-        if (StringUtils.isNumeric(code)) {
+        if (StringUtils.isNumeric(code) || Integer.parseInt(code) != 0) {
             value = repository.findByNumCode(Integer.parseInt(code));
 
         } else {
             value = repository.findByCharCode(code);
         }
         if (value == null) {
-            logger.info("Valute with the code " + code + " was not found");
+            logger.error("Valute with the code " + code + " was not found");
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Valute with the code " + code + " was not found");
         }
         return value;
