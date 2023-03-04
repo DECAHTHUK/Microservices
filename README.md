@@ -8,8 +8,8 @@ A pet project with a usage of all the skills I have(like a glock 19 but with sup
 - PostgreSQL
 - Hibernate
 - Docker
-- Feign(enhancing in the future)
-- Resilience4j(enhancing in the future)
+- Feign
+- Resilience4j
 - Zipkin, Sleuth, RabbitMQ(in the future)
 - Kubernetes(in the future)
 
